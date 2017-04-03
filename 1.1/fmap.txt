@@ -1,0 +1,25 @@
+fmap f (fmap g h) == fmap (f . g) h
+fmap f (g . h) = f . (g . h)
+fmap (f . g) h = (f . g) . h
+
+fmap f (fmap g xs) = fmap (f . g) xs
+
+1.a 
+fmap f (fmap g []) -- def fmap
+ == fmap f []      -- def fmap
+ == []
+
+1.b 
+fmap (f . g) []    -- def fmap
+ == []
+
+2.a 
+fmap f (fmap g (x : xs))         -- def map
+ == fmap f (g x : fmap g xs)     -- def map
+ == f (g x) : fmap f (fmap g xs) -- IH
+ == f (g x) : fmap (f . g) xs
+
+2.b 
+fmap (f . g) (x : xs) 			 -- def map
+ == (f . g) x : fmap (f . g) xs  -- def (.)
+ == f (g x) : fmap (f . g) xs

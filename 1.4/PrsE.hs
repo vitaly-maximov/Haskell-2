@@ -23,3 +23,19 @@ satisfyE = undefined
 
 charE :: Char -> PrsE Char
 charE c = satisfyE (== c)
+
+{-
+Сделайте парсер
+
+newtype PrsE a = PrsE { runPrsE :: String -> Either String (a, String) }
+из предыдущей задачи функтором и аппликативным функтором:
+
+GHCi> let anyE = satisfyE (const True)
+GHCi> runPrsE ((,) <$> anyE <* charE 'B' <*> anyE) "ABCDE"
+Right (('A','C'),"DE")
+GHCi> runPrsE ((,) <$> anyE <* charE 'C' <*> anyE) "ABCDE"
+Left "unexpected B"
+GHCi> runPrsE ((,) <$> anyE <* charE 'B' <*> anyE) "AB"
+Left "unexpected end of input"
+-}
+

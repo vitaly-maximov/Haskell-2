@@ -53,3 +53,59 @@ instance Applicative Prs where
 			Just (f, s') -> case p2 s' of
 				Nothing -> Nothing
 				Just (x, s'') -> Just (f x, s'')
+
+{-
+Сделайте парсер
+
+newtype Prs a = Prs { runPrs :: String -> Maybe (a, String) }
+представителем класса типов Alternative с естественной для парсера семантикой:
+
+GHCi> runPrs (char 'A' <|> char 'B') "ABC"
+Just ('A',"BC")
+GHCi> runPrs (char 'A' <|> char 'B') "BCD"
+Just ('B',"CD")
+GHCi> runPrs (char 'A' <|> char 'B') "CDE"
+Nothing
+Представители для классов типов Functor и Applicative уже реализованы. Функцию char :: Char -> Prs Char включать в решение не нужно, но полезно реализовать для локального тестирования.
+-}
+
+instance Alternative Prs where
+  empty = undefined
+  (<|>) = undefined
+
+{-
+Реализуйте для парсера
+
+newtype Prs a = Prs { runPrs :: String -> Maybe (a, String) }
+парсер-комбинатор many1 :: Prs a -> Prs [a], который отличается от many только тем, что он терпит неудачу в случае, когда парсер-аргумент неудачен на начале входной строки.
+
+> runPrs (many1 $ char 'A') "AAABCDE"
+Just ("AAA","BCDE")
+> runPrs (many1 $ char 'A') "BCDE"
+Nothing
+Функцию char :: Char -> Prs Char включать в решение не нужно, но полезно реализовать для локального тестирования.
+-}
+
+many1 :: Prs a -> Prs [a]
+many1 = undefined
+
+{-
+Реализуйте парсер nat :: Prs Int для натуральных чисел, так чтобы парсер
+
+mult :: Prs Int
+mult = (*) <$> nat <* char '*' <*> nat
+обладал таким поведением
+
+GHCi> runPrs mult "14*3"
+Just (42,"")
+GHCi> runPrs mult "64*32"
+Just (2048,"")
+GHCi> runPrs mult "77*0"
+Just (0,"")
+GHCi> runPrs mult "2*77AAA"
+Just (154,"AAA")
+Функции char :: Char -> Prs Char и mult :: Prs Int включать в решение не нужно, но полезно реализовать для локального тестирования.
+-}
+
+nat :: Prs Int
+nat = undefined

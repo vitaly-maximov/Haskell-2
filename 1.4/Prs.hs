@@ -1,5 +1,6 @@
 module Prs where
 
+import Data.Char
 import Control.Applicative
 
 {-
@@ -69,9 +70,17 @@ Nothing
 Представители для классов типов Functor и Applicative уже реализованы. Функцию char :: Char -> Prs Char включать в решение не нужно, но полезно реализовать для локального тестирования.
 -}
 
+char :: Char -> Prs Char
+char c = Prs p where	
+	p (x : xs) | x == c = Just (x, xs)
+	p _ = Nothing
+
 instance Alternative Prs where
-  empty = undefined
-  (<|>) = undefined
+  empty = Prs (\s -> Nothing)
+  Prs p1 <|> Prs p2 = Prs p where
+  	p s = case p1 s of
+  		Nothing -> p2 s
+  		Just x -> Just x
 
 {-
 Реализуйте для парсера
@@ -87,7 +96,8 @@ Nothing
 -}
 
 many1 :: Prs a -> Prs [a]
-many1 = undefined
+many1 p = (:) <$> p <*> (many1 p <|> pure [])
+
 
 {-
 Реализуйте парсер nat :: Prs Int для натуральных чисел, так чтобы парсер
@@ -107,5 +117,17 @@ Just (154,"AAA")
 Функции char :: Char -> Prs Char и mult :: Prs Int включать в решение не нужно, но полезно реализовать для локального тестирования.
 -}
 
+mult :: Prs Int
+mult = (*) <$> nat <* char '*' <*> nat
+
+digit :: Prs Int
+digit = Prs p where	
+	p (x : xs) | isDigit x = Just (digitToInt x, xs)
+	p _ = Nothing
+
+
 nat :: Prs Int
-nat = undefined
+nat = Prs p where
+	p s = case runPrs (many1 digit) s of
+		Nothing -> Nothing
+		Just (digits, s') -> Just (fst $ foldr (\i (sum, pos) -> (sum + i * 10 ^ pos, pos + 1)) (0, 0) digits, s')

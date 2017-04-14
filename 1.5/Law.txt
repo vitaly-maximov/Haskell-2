@@ -1,0 +1,17 @@
+fmap h2 (fmap h1 (Cmps x)) = fmap (h2 . h1) (Cmps x)
+
+(*) fmap h2 (fmap h1 cont) = (fmap h2) (fmap h1 cont) = ((fmap h2) . (fmap h1)) cont = fmap (h2 . h1) cont
+=> (fmap h2) . (fmap h1) = fmap (h2 . h1)
+
+1. 
+fmap h2 (fmap h1 (Cmps x)) -- def fmap (Cmps)
+ == fmap h2 (Cmps $ fmap (fmap h1) x) -- def fmap (Cmps)
+ == Cmps $ fmap (fmap h2) (fmap (fmap h1) x)
+
+2.
+fmap (h2 . h1) (Cmps x) -- def fmap (Cmps)
+ == Cmps $ fmap (fmap (h2 . h1)) x -- (*) fmap (g)
+ == Cmps $ fmap ((fmap h2) . (fmap h1)) x -- (*) fmap (f)
+ == Cmps $ ((fmap (fmap h2)) . (fmap (fmap h1))) x -- def (.)
+ == Cmps $ (fmap (fmap h2)) (fmap (fmap h1) x) -- functions application is left associative
+ == Cmps $ fmap (fmap h2) (fmap (fmap h1) x)

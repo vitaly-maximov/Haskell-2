@@ -42,3 +42,8 @@ data SumError = SumError Int ReadError
 trySum :: [String] -> Except SumError Integer
 trySum = Except . snd . foldl (\ (n, sum) x -> (n + 1, (+) <$> sum <*> tryReadNth n x)) (1, Right 0) where
     tryReadNth n x = runExcept $ withExcept (SumError n) (tryRead x)
+
+{-
+trySum = except . snd . foldl (\ (n, sum) x -> (n + 1, (+) <$> sum <*> tryReadNth n x)) (1, Right 0) where
+    tryReadNth n x = runExcept $ withExcept (SumError n) (tryRead x)
+-}

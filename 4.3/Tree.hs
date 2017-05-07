@@ -1,58 +1,55 @@
 module Tree where
 
+import Control.Monad.Trans.Except
 import Control.Monad.Writer
-import Control.Monad.Trans.State
+import Control.Monad.Identity
+import Data.Foldable
 
 {-
-Те из вас, кто проходил первую часть нашего курса, конечно же помнят, последнюю задачу из него. 
-В тот раз всё закончилось монадой State, но сейчас с неё все только начинается!
+С деревом мы недавно встречались:
 
 data Tree a = Leaf a | Fork (Tree a) a (Tree a)
-Вам дано значение типа Tree (), иными словами, вам задана форма дерева. 
-От вас требуется сделать две вещи: во-первых, пронумеровать вершины дерева, обойдя их in-order обходом 
-(левое поддерево, вершина, правое поддерево); во-вторых, подсчитать количество листьев в дереве.
+Вам на вход дано дерево, содержащее целые числа, записанные в виде строк. Ваша задача обойти дерево in-order 
+(левое поддерево, вершина, правое поддерево) и просуммировать числа до первой строки, 
+которую не удаётся разобрать функцией tryRead из прошлого задания (или до конца дерева, если ошибок нет). 
+Если ошибка произошла, её тоже надо вернуть.
+Обходить деревья мы уже умеем, так что от вас требуется только функция go, подходящая для такого вызова:
 
-GHCi> numberAndCount (Leaf ())
-(Leaf 1,1)
-GHCi> numberAndCount (Fork (Leaf ()) () (Leaf ()))
-(Fork (Leaf 1) 2 (Leaf 3),2)
-Конечно, можно решить две подзадачи по-отдельности, но мы сделаем это всё за один проход. 
-Если бы вы писали решение на императивном языке, вы бы обошли дерево, 
-поддерживая в одной переменной следующий доступный номер для очередной вершины, 
-а в другой — количество встреченных листьев, причем само значение второй переменной, по сути, в процессе обхода не требуется. 
-Значит, вполне естественным решением будет завести состояние для первой переменной, а количество листьев накапливать в «логе»-моноиде.
-
-Вот так выглядит код, запускающий наше вычисление и извлекающий результат:
-
-numberAndCount :: Tree () -> (Tree Integer, Integer)
-numberAndCount t = getSum <$> runWriter (evalStateT (go t) 1)
+treeSum t = let (err, s) = runWriter . runExceptT $ traverse_ go t
+            in (maybeErr err, getSum s)
   where
-    go :: Tree () -> StateT Integer (Writer (Sum Integer)) (Tree Integer)
-    go = undefined
-Вам осталось только описать само вычисление — функцию go.
+    maybeErr :: Either ReadError () -> Maybe ReadError
+    maybeErr = either Just (const Nothing)
+
+GHCi> treeSum $ Fork (Fork (Leaf "1") "2" (Leaf "oops")) "15" (Leaf "16")
+(Just (NoParse "oops"),3)
+GHCi> treeSum $ Fork (Fork (Leaf "1") "2" (Leaf "0")) "15" (Leaf "16")
+(Nothing,34)
 -}
 
 data Tree a = Leaf a | Fork (Tree a) a (Tree a)
-    deriving Show
 
-numberAndCount :: Tree () -> (Tree Integer, Integer)
-numberAndCount t = getSum <$> runWriter (evalStateT (go t) 1)
+treeSum t = let (err, s) = runWriter . runExceptT $ traverse_ go t
+            in (maybeErr err, getSum s)
   where
-    go :: Tree () -> StateT Integer (Writer (Sum Integer)) (Tree Integer)
-    go tree = do
-        case tree of
-            Leaf _ -> do
-                n <- inc
-                lift $ tell 1
-                return $ Leaf n
-            Fork l x r -> do
-                l' <- go l
-                n <- inc
-                r' <- go r
-                return $ Fork l' n r'
-        where
-            inc = do
-                n <- get
-                put $ n + 1
-                return n
+    maybeErr :: Either ReadError () -> Maybe ReadError
+    maybeErr = either Just (const Nothing)
 
+data ReadError = EmptyInput | NoParse String
+  deriving Show
+
+tryRead :: (Read a, Monad m) => String -> ExceptT ReadError m a
+tryRead [] = throwE EmptyInput
+tryRead s = case reads s of
+    (x, "") : _ -> return x
+    _ -> throwE $ NoParse s
+
+instance Foldable Tree where
+    foldr f ini (Leaf x) = f x ini
+    foldr f ini (Fork l x r) = foldr f (f x (foldr f ini r)) l
+
+go :: String -> ExceptT ReadError (Writer (Sum Integer)) ()
+go s = do    
+    x <- tryRead s
+    lift $ tell $ Sum x
+    return ()

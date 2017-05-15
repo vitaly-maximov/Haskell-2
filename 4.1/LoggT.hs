@@ -144,3 +144,41 @@ type Logg = LoggT Identity
 
 runLogg :: Logg a -> Logged a
 runLogg = runIdentity . runLoggT
+
+{-
+В последнем примере предыдущей задачи функция lift :: (MonadTrans t, Monad m) => m a -> t m a 
+позволяла поднять вычисление из внутренней монады (в примере это был Logg) во внешний трансформер (StateT Integer). 
+Это возможно, поскольку для трансформера StateT s реализован представитель класса типов MonadTrans из Control.Monad.Trans.Class.
+
+Сделайте трансформер LoggT представителем этого класса MonadTrans, 
+так чтобы можно было поднимать вычисления из произвольной внутренней монады в наш трансформер:
+
+instance MonadTrans LoggT where
+  lift = undefined
+
+logSt :: LoggT (State Integer) Integer
+logSt = do 
+  lift $ modify (+1)
+  a <- lift get
+  write2log $ show $ a * 10
+  lift $ put 42
+  return $ a * 100
+Проверка:
+
+GHCi> runState (runLoggT logSt) 2
+(Logged "30" 300,42)
+-}
+
+logSt :: LoggT (State Integer) Integer
+logSt = do 
+  lift $ modify (+1)
+  a <- lift get
+  write2log $ show $ a * 10
+  lift $ put 42
+  return $ a * 100
+
+instance MonadTrans LoggT where
+  -- lift :: m a -> LoggT m a
+  lift m = LoggT $ do
+    a <- m
+    return $ Logged "" a
